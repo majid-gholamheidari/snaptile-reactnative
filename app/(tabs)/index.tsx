@@ -139,7 +139,10 @@ export default function HomeScreen() {
                     const response = await axios.get(`${API_URL}/user/stage-info`);
                     setStageDetails(response.data);
                 } catch (error) {
-                    Alert.alert("Error", "Could not load your stage details.");
+                    const errorMessage = axios.isAxiosError(error) && error.response
+                        ? JSON.stringify(error.response.data)
+                        : "Could not load your stage details.";
+                    Alert.alert("Error", errorMessage);
                 } finally {
                     setIsLoading(false);
                 }
@@ -150,7 +153,7 @@ export default function HomeScreen() {
 
     const handleStartGameWithSettings = (gridSize: number) => {
         setIsModalVisible(false);
-        const shuffleMoves = shuffleLevel * 30; // UPDATED LINE
+        const shuffleMoves = shuffleLevel * 30;
         router.push({
             pathname: '/game',
             params: {
@@ -163,7 +166,12 @@ export default function HomeScreen() {
 
     const handlePlayForTask = () => {
         if (!stageDetails || !stageDetails.tasks) return;
-        router.push({pathname: '/taskGame'});
+        const nextTask = stageDetails.tasks.find(task => !task.completed);
+        if (nextTask) {
+            router.push({pathname: '/taskGame', params: {taskId: nextTask.id.toString()}});
+        } else {
+            Alert.alert("Stage Complete!", "You have completed all tasks for this stage.");
+        }
     };
     const handleStartFreePlay = () => setIsModalVisible(true);
 
