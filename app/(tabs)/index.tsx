@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import {View, Text, StyleSheet, Pressable, Alert, Image, Modal, ActivityIndicator} from 'react-native';
+import {View, Text, StyleSheet, Pressable, Alert, Image, Modal, ActivityIndicator, Dimensions} from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
+import { ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 
@@ -22,14 +23,17 @@ const COLORS = {
     hard: '#EF4444',
     modalBackdrop: 'rgba(0, 0, 0, 0.5)',
     completedTask: '#9CA3AF',
-    taskButton: '#3B82F6', // A different blue for the task button
+    taskButton: '#3B82F6',
 };
 
-// --- Data Structures ---
+// --- Data Structures (Updated to match new API response) ---
 interface Task {
     id: number;
     title: string;
     completed: boolean;
+    completed_games: number;
+    total_games: number;
+    completed_progress: number;
 }
 
 interface StageDetails {
@@ -83,10 +87,10 @@ const levelImages = {
 };
 
 const StageTasks = ({ level, level_title, tasks }: { level: number, level_title: string, tasks: Task[] }) => {
-    const imageSource = levelImages[level_title] || levelImages.default;
+    const imageSource = levelImages[level_title];
 
     return (
-        <View style={styles.tasksContainer}>
+        <View style={[styles.tasksContainer, { height: Dimensions.get('window').height * 0.52 }]}>
             <Text style={styles.tasksTitle}>{`Level ${level}: ${level_title}`}</Text>
             <View style={styles.levelImageContainer}>
                 <Image
@@ -96,18 +100,30 @@ const StageTasks = ({ level, level_title, tasks }: { level: number, level_title:
                 />
             </View>
 
-            {tasks.map(task => (
-                <View key={task.id} style={styles.taskItem}>
-                    <Feather
-                        name={task.completed ? "check-square" : "square"}
-                        size={22}
-                        color={task.completed ? COLORS.completedTask : COLORS.primary}
-                    />
-                    <Text style={[styles.taskText, task.completed && styles.completedTaskText]}>
-                        {task.title}
-                    </Text>
-                </View>
-            ))}
+            <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
+                {tasks.map(task => (
+                    <View key={task.id} style={styles.taskCard}>
+                        <View style={styles.taskHeader}>
+                            <Feather
+                                name={task.completed ? "check-circle" : "circle"}
+                                size={24}
+                                color={task.completed ? COLORS.secondary : COLORS.primary}
+                            />
+                            <Text style={[styles.taskText, task.completed && styles.completedTaskText]}>
+                                {task.title}
+                            </Text>
+                        </View>
+                        <View style={styles.taskProgressContainer}>
+                            <View style={styles.taskProgressBar}>
+                                <View style={[styles.taskProgressBarFill, { width: `${Math.round(task.completed_progress)}%` }]} />
+                            </View>
+                            <Text style={styles.taskProgressText}>
+                                {`${task.completed_games}/${task.total_games}`}
+                            </Text>
+                        </View>
+                    </View>
+                ))}
+            </ScrollView>
         </View>
     );
 };
@@ -195,16 +211,19 @@ export default function HomeScreen() {
                 />
             )}
 
-            <View style={styles.menuContainer}>
-                <Pressable style={[styles.menuButton, {backgroundColor: COLORS.taskButton}]} onPress={handlePlayForTask}>
-                    <Feather name="target" size={22} color={COLORS.textOnPrimary} />
-                    <Text style={styles.menuButtonText}>Complete Next Task</Text>
-                </Pressable>
-                <Pressable style={styles.menuButton} onPress={handleStartFreePlay}>
-                    <Feather name="play-circle" size={22} color={COLORS.textOnPrimary} />
-                    <Text style={styles.menuButtonText}>Free Play</Text>
-                </Pressable>
+            <View style={styles.actionButtons}>
+                <View style={styles.menuContainer}>
+                    <Pressable style={[styles.menuButton, {backgroundColor: COLORS.taskButton}]} onPress={handlePlayForTask}>
+                        <Feather name="target" size={22} color={COLORS.textOnPrimary} />
+                        <Text style={styles.menuButtonText}>Complete Next Task</Text>
+                    </Pressable>
+                    <Pressable style={styles.menuButton} onPress={handleStartFreePlay}>
+                        <Feather name="play-circle" size={22} color={COLORS.textOnPrimary} />
+                        <Text style={styles.menuButtonText}>Free Play</Text>
+                    </Pressable>
+                </View>
             </View>
+
 
             <Modal animationType="fade" transparent={true} visible={isModalVisible} onRequestClose={() => setIsModalVisible(false)}>
                 <View style={styles.modalContainer}>
@@ -253,6 +272,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.background, padding: 20 },
     headerCard: { backgroundColor: COLORS.card, borderRadius: 20, padding: 15, flexDirection: 'row', alignItems: 'center', marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 8 },
+    actionButtons: { backgroundColor: COLORS.card, borderRadius: 20, padding: 15, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 8 },
     avatar: { width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: COLORS.primary },
     headerTextContainer: { flex: 1, marginLeft: 15 },
     username: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
@@ -264,11 +284,16 @@ const styles = StyleSheet.create({
     tasksTitle: {fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: 10,},
     levelImageContainer: {width: 160, height: 160, borderRadius: 80, borderColor: 'rgb(164,202,255)', borderWidth: 4, padding: 5, alignSelf: 'center', marginTop: 15, marginBottom: 15,},
     levelImage: {width: '100%', height: '100%', borderRadius: 75,},
-    taskItem: {flexDirection: 'row', alignItems: 'center', paddingVertical: 8,},
-    taskText: {fontSize: 16, color: COLORS.text, marginLeft: 10,},
-    completedTaskText: {color: COLORS.completedTask, textDecorationLine: 'line-through'},
+    taskCard: { backgroundColor: COLORS.background, borderRadius: 10, paddingTop: 8, paddingBottom:8, paddingHorizontal: 15, marginBottom: 10 },
+    taskHeader: { flexDirection: 'row', alignItems: 'center' },
+    taskText: { fontSize: 16, color: COLORS.text, marginLeft: 10, flex: 1 },
+    completedTaskText: { color: COLORS.completedTask },
+    taskProgressContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+    taskProgressBar: { height: 8, flex: 1, backgroundColor: COLORS.border, borderRadius: 4, marginRight: 10 },
+    taskProgressBarFill: { height: '100%', backgroundColor: COLORS.secondary, borderRadius: 4 },
+    taskProgressText: { fontSize: 12, color: COLORS.textLight, fontWeight: '600' },
     menuContainer: { flex: 1, justifyContent: 'center', width: '100%', maxWidth: 320, alignSelf: 'center' },
-    menuButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, paddingVertical: 18, paddingHorizontal: 25, borderRadius: 12, marginBottom: 15, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+    menuButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, paddingVertical: 18, paddingHorizontal: 25, borderRadius: 12, marginVertical: 8, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
     menuButtonText: { color: COLORS.textOnPrimary, fontSize: 18, fontWeight: '600', marginLeft: 15 },
     modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.modalBackdrop },
     modalContent: { width: '85%', maxWidth: 340, backgroundColor: COLORS.card, borderRadius: 20, padding: 25, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 },
