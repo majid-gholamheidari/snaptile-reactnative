@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, Alert, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Pressable, Alert, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal, TouchableOpacity } from 'react-native';
 import { MotiView } from 'moti';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
@@ -47,6 +47,7 @@ const SignInForm = () => {
             setIsLoading(false);
         }
     };
+
     return (
         <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
@@ -81,8 +82,9 @@ const SignUpForm = ({ onSignUpSuccess }: { onSignUpSuccess: () => void }) => {
     const [fullName, setFullName] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [refCode, setRefCode] = useState(''); // State for referral code
+    const [refCode, setRefCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
 
     const handleSignUp = async () => {
         if (!fullName || !username || !password) {
@@ -102,7 +104,7 @@ const SignUpForm = ({ onSignUpSuccess }: { onSignUpSuccess: () => void }) => {
         } catch (error) {
             if (axios.isAxiosError(error) && error.response) {
                 const responseData = error.response.data;
-                console.log(responseData)
+                console.log(responseData);
                 if (responseData && responseData.error) {
                     Alert.alert('Sign Up Failed', responseData.error);
                 } else {
@@ -119,6 +121,82 @@ const SignUpForm = ({ onSignUpSuccess }: { onSignUpSuccess: () => void }) => {
 
     return (
         <View style={styles.formContainer}>
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <ScrollView contentContainerStyle={styles.modalScroll}>
+                            <Text style={styles.modalTitle}>Privacy Policy</Text>
+                            <Text style={styles.modalText}>
+                                Last Updated: August 2, 2025
+                            </Text>
+                            <Text style={styles.modalText}>
+                                At SnapTile, we respect your privacy and are committed to protecting your personal information. This document explains what information we collect from you, why we need it, and how we protect it.
+                            </Text>
+                            <Text style={styles.modalText}>
+                                Please read this policy carefully before registering and using our services. Your use of this application constitutes your full acceptance of these policies.
+                            </Text>
+                            <Text style={styles.modalSubtitle}>1. Information We Collect</Text>
+                            <Text style={styles.modalText}>
+                                To provide better services and create a personalized user experience, we collect the following information:
+                            </Text>
+                            <Text style={styles.modalSubsection}>Information You Provide Directly:</Text>
+                            <Text style={styles.modalText}>
+                                - Full Name: To personalize your user account.
+                                {"\n"}- Username: To uniquely identify you in the game and for logging into your account.
+                                {"\n"}- Password: To protect your account (your password is stored securely and in an encrypted format).
+                                {"\n"}- Avatar: The image you choose for your profile.
+                                {"\n"}- Referral Code (Optional): If you were referred by another user.
+                            </Text>
+                            <Text style={styles.modalSubsection}>Information Collected Automatically:</Text>
+                            <Text style={styles.modalText}>
+                                - Game-related Data: Your progress in levels, number of moves, time spent solving puzzles, and the status of completed tasks.
+                            </Text>
+                            <Text style={styles.modalSubtitle}>2. Why We Collect This Information</Text>
+                            <Text style={styles.modalText}>
+                                The collected information is used for the following purposes:
+                            </Text>
+                            <Text style={styles.modalText}>
+                                - Account Creation and Management: To allow you to have a user account, log in, and save your progress.
+                                {"\n"}- Personalizing Your Experience: To display your name and avatar within the game environment.
+                                {"\n"}- Improving Our Services: Analyzing gameplay data helps us improve the game and design more engaging levels.
+                                {"\n"}- Core Game Functionality: To save your progress in levels and tasks for you to continue playing in future sessions.
+                            </Text>
+                            <Text style={styles.modalSubtitle}>3. Data Protection and Security</Text>
+                            <Text style={styles.modalText}>
+                                The security of your information is our top priority. We are committed to:
+                            </Text>
+                            <Text style={styles.modalText}>
+                                - Keeping your personal information secure.
+                                {"\n"}- Using secure protocols (such as HTTPS) for data transmission between the application and our servers.
+                                {"\n"}- Storing your password in a hashed (encrypted) format, to which we have no access.
+                            </Text>
+                            <Text style={styles.modalSubtitle}>4. No Sharing with Third Parties</Text>
+                            <Text style={styles.modalText}>
+                                We commit that we will not sell, rent, or share your personal information with any third-party person or organization under any circumstances. All collected information is used solely for the purposes stated in this document and to improve your experience in the SnapTile game.
+                            </Text>
+                            <Text style={styles.modalSubtitle}>5. Changes to This Privacy Policy</Text>
+                            <Text style={styles.modalText}>
+                                This policy may be updated in the future. In the event of any significant changes, you will be notified through the application. Your continued use of the application after changes are implemented will constitute your acceptance of the new policies.
+                            </Text>
+                            <Text style={styles.modalSubtitle}>6. Contact Us</Text>
+                            <Text style={styles.modalText}>
+                                If you have any questions about this policy, you can contact us at support@snaptile.ir.
+                            </Text>
+                        </ScrollView>
+                        <Pressable
+                            style={[styles.button, styles.modalCloseButton]}
+                            onPress={() => setModalVisible(false)}
+                        >
+                            <Text style={styles.buttonText}>Close</Text>
+                        </Pressable>
+                    </View>
+                </View>
+            </Modal>
             <View style={styles.inputContainer}>
                 <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor={COLORS.textLight} value={fullName} onChangeText={setFullName} />
             </View>
@@ -128,13 +206,20 @@ const SignUpForm = ({ onSignUpSuccess }: { onSignUpSuccess: () => void }) => {
             <View style={styles.inputContainer}>
                 <TextInput style={styles.input} placeholder="Password" placeholderTextColor={COLORS.textLight} value={password} onChangeText={setPassword} secureTextEntry />
             </View>
-            {/* New Referral Code Input */}
             <View style={styles.inputContainer}>
                 <TextInput style={styles.input} placeholder="Referral Code (Optional)" placeholderTextColor={COLORS.textLight} value={refCode} onChangeText={setRefCode} autoCapitalize="none" />
             </View>
             <Pressable style={styles.button} onPress={handleSignUp} disabled={isLoading}>
                 {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Create Account</Text>}
             </Pressable>
+            <View style={styles.privacyContainer}>
+                <Text style={styles.privacyText}>
+                    By creating an account, you agree to our{' '}
+                    <Text style={styles.privacyLink} onPress={() => setModalVisible(true)}>
+                        Privacy Policy
+                    </Text>
+                </Text>
+            </View>
         </View>
     );
 };
@@ -160,7 +245,6 @@ export default function AuthScreen() {
                     transition={{ type: 'timing', duration: 400 }}
                     style={styles.card}
                 >
-                    {/* Tab Switcher */}
                     <View style={styles.tabContainer}>
                         <Pressable
                             style={[styles.tabButton, activeTab === 'signIn' && styles.activeTabButton]}
@@ -175,10 +259,8 @@ export default function AuthScreen() {
                             <Text style={[styles.tabText, activeTab === 'signUp' && styles.activeTabText]}>Sign Up</Text>
                         </Pressable>
                     </View>
-
-                    {/* Form Display with animation on change */}
                     <MotiView
-                        key={activeTab} // This makes the animation re-run on tab change
+                        key={activeTab}
                         from={{ opacity: 0, translateY: 20 }}
                         animate={{ opacity: 1, translateY: 0 }}
                         transition={{ type: 'timing', duration: 300 }}
@@ -199,7 +281,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flexGrow: 1,
-        justifyContent: 'center', // Vertically center the content
+        justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
     },
@@ -278,5 +360,63 @@ const styles = StyleSheet.create({
         color: COLORS.card,
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    privacyContainer: {
+        marginTop: 15,
+        alignItems: 'center',
+    },
+    privacyText: {
+        fontSize: 14,
+        color: COLORS.textLight,
+        textAlign: 'center',
+    },
+    privacyLink: {
+        color: COLORS.primary,
+        textDecorationLine: 'underline',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: COLORS.card,
+        borderRadius: 20,
+        padding: 20,
+        marginHorizontal: 20,
+        maxHeight: '80%',
+        width: '90%',
+    },
+    modalScroll: {
+        paddingBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: COLORS.text,
+        marginBottom: 15,
+    },
+    modalSubtitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: COLORS.text,
+        marginTop: 15,
+        marginBottom: 10,
+    },
+    modalSubsection: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: COLORS.text,
+        marginTop: 10,
+        marginBottom: 5,
+    },
+    modalText: {
+        fontSize: 14,
+        color: COLORS.text,
+        marginBottom: 10,
+    },
+    modalCloseButton: {
+        marginTop: 15,
     },
 });
