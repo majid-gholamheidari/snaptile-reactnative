@@ -17,7 +17,8 @@
         "backgroundColor": "#67d9fb"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.majidheidari.SnapTile"
+      "package": "com.majidheidari.SnapTile",
+      "permissions": []
     },
     "web": {
       "bundler": "metro",
